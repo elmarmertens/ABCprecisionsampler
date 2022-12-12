@@ -1,0 +1,15 @@
+*.*
+*
+!*.md
+!*.f90
+!*.m
+!*.txt
+!*.csv
+!*.sh
+!*.xls
+!*.xlsx
+!.gitignore
+!.gitattributes
+!/matlabtoolbox/
+!/matlabtoolbox/*/
+local*.m
