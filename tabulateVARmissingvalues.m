@@ -29,17 +29,21 @@ initwrap
 doSingleThread   = true;
 
 
-for BRANDS = {'WindowsXeon', 'AppleSilicon'}
+for BRANDS = {'IntelUbuntu', 'WindowsXeon', 'AppleSilicon'}
 
     thisBrand = BRANDS{:};
     switch thisBrand
         case 'WindowsXeon'
-            thisComputerShort = 'Windows Intel Xeon';
+            thisComputerShort = 'Intel Xeon w/Windows';
             thisComputer = 'Intel(R) Xeon(R) Gold 6320 CPU @ 2.1 GHz (Windows)'; 
             availableThreads = 32;
         case 'AppleSilicon'
             thisComputerShort = 'Apple Silicon';
             thisComputer = 'Apple M1 Pro (macOS, Rosetta 2)';
+            availableThreads = 8;
+        case 'IntelUbuntu'
+            thisComputerShort = 'Intel Xeon w/Ubuntu';
+            thisComputer = 'Intel(R) Xeon(R) CPU E5-1680 v4 @ 3.40GHz';
             availableThreads = 8;
         otherwise
             error('brand <<%s>> not known.', thisBrand)
@@ -55,6 +59,9 @@ for BRANDS = {'WindowsXeon', 'AppleSilicon'}
 
         for missValShare = [.01 .05 .1 .2]
 
+            if strcmp(thisBrand, 'IntelUbuntu') && missValShare > .01
+                continue % skip other cases, since matfiles for IntelUbuntu are missing
+            end
 
             matfiledir = 'matfiles';
             matname = sprintf('VARmissingvaluesPStimes%sThreads%dof%dmissValShare%02d', thisBrand, usedThreads, availableThreads, floor(missValShare * 100));
@@ -63,6 +70,11 @@ for BRANDS = {'WindowsXeon', 'AppleSilicon'}
             if mat.missValShare ~= missValShare
                 error('missValShare mismatch in matfile')
             end
+
+            thisVer    = mat.thisVer; % MatFile object does not support indexing into struct arrays
+            ndx        = arrayfun(@(x) strcmp(x.Name, 'MATLAB'), thisVer);
+            thisMatlab = sprintf('%s %s', thisVer(ndx).Name, thisVer(ndx).Release);
+
 
             gridNy = mat.gridNy;
             gridT  = mat.gridT;
@@ -160,7 +172,7 @@ for BRANDS = {'WindowsXeon', 'AppleSilicon'}
             fprintf(fid, 'Panels A and B report the execution time of a typical call to the precision-based sampler for different choices of lag length ($p$),  number of VAR variables ($N_y$) and observations ($T$) in percentage points of the execution time of the Durbin-Koopmann''s disturbance smoothing sampler (DK) whose execution time (in seconds) is reported in Panel C.\n');
             fprintf(fid, 'Execution times for the  precision-based sampler reported in Panel A reflect the use of prepared one-off computations (incl. the QR decomposition of measurement loadings $\\boldsymbol{C}$) outside the measured times. These time are relevant for MCMC applications where $\\boldsymbol{C}$ does not change between sampling steps.\n');
             fprintf(fid, 'Panel B considers calls to the precision-based sampler that encompass all computations.\n');
-            fprintf(fid, 'All times were measured by Matlab''s \\texttt{timeit} function on an %s ', thisComputer);
+            fprintf(fid, 'All times were measured in %s with the \\texttt{timeit} function on an %s ', thisMatlab, thisComputer);
             if usedThreads == 1
                 fprintf(fid, ' in single-threaded mode.\n');
             else
