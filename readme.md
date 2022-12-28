@@ -15,8 +15,7 @@ Elmar Mertens (Deutsche Bundesbank) [^em]
 
 ## Overview
 
-These replication files provide code to apply the precision-based sampler for state spaces that have not measurement error as described in my paper.
+These replication files provide code to apply the precision-based sampler for state spaces that have not measurement error as described in my paper. The code in this repository allows to replicate the following two applications described in the paper:
 
-The first application is a VAR(p) model with missing observations. [goPrecisonsamplerVARmissingvalues.m](https://github.com/elmarmertens/kendallcloverCode/blob/kendallcloverCode/goPrecisonsamplerVARmissingvalues.m) simulates data for a VAR(p) and applies the precision-based sampler as well as the Durbin-Koopmans (DK) sampler, and collects execution times for various model configurations described in the paper. [tabulateVARmissingvalues.m](https://github.com/elmarmertens/kendallcloverCode/blob/kendallcloverCode/tabulateVARmissingvalues.m) tabulates the results.
-
-More to follow ...
+- Common-Trend model with VAR(p) dynamics for the gap variables. [goPrecisonsamplerTrendVAR.m](https://github.com/elmarmertens/kendallcloverCode/blob/kendallcloverCode/goPrecisonsamplerTrendVAR.m) simulates data for a VAR(p) and applies the precision-based sampler as well as the Durbin-Koopmans (DK) sampler, and collects execution times for various model configurations described in the paper. [tabulateTrendVAR.m](https://github.com/elmarmertens/kendallcloverCode/blob/kendallcloverCode/tabulateTrendVAR.m) tabulates the results.
+- VAR(p) model with missing observations. [goPrecisonsamplerVARmissingvalues.m](https://github.com/elmarmertens/kendallcloverCode/blob/kendallcloverCode/goPrecisonsamplerVARmissingvalues.m) simulates data for a VAR(p) and applies the precision-based sampler as well as the Durbin-Koopmans (DK) sampler, and collects execution times for various model configurations described in the paper. [tabulateVARmissingvalues.m](https://github.com/elmarmertens/kendallcloverCode/blob/kendallcloverCode/tabulateVARmissingvalues.m) tabulates the results.
