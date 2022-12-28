@@ -17,10 +17,12 @@ addpath matlabtoolbox/emstatespace/
 
 rng(061222); %  fix random seed
 
+quicky = false;
+
 %#ok<*UNRCH>
 %#ok<*NOPTS>
 
-for missValShare = [.01 .05 .1 .2]
+for missValShare = [.01 .05 .1 .2 .3 .5]
     
     for doSingleThread = [true false]
 
@@ -43,7 +45,7 @@ for missValShare = [.01 .05 .1 .2]
         gridT  = [200 800];
         gridP  = [4 8 12 24];
 
-        [PStimes, PS0times, DKtimes]  = deal(NaN(length(gridP), length(gridNy), length(gridT)));
+        [PStimes, PS0times, DKtimes, DKMisstimes]  = deal(NaN(length(gridP), length(gridNy), length(gridT)));
 
         for iterT = 1 : length(gridT)
             T = gridT(iterT)
@@ -112,9 +114,13 @@ for missValShare = [.01 .05 .1 .2]
                     x0companion1 = cat(1, 1, x0(:));
                     cholsig00companion1 = zeros(1 + Ny * p);
 
+                    % expand all to 3D matrices
+                    acompanion1 = repmat(acompanion1, [1 1 T]);
+                    bcompanion1 = repmat(bcompanion1, [1 1 T]);
+
                     ccompanion1 = cat(2, zeros(Ny,1,T), ccc, zeros(Ny,Ny * (p-1),T));
 
-
+                    
                     %% construct matrix-form state space
                     NyT   = Ny * T;
                     NwT   = Nw * T;
@@ -206,10 +212,12 @@ for missValShare = [.01 .05 .1 .2]
 
                     precsam  = @() VARTVPSVprecisionsamplerNaN0const(aaa,invbbb,ccc,Ydata,yNaNndx,x0,xbar,rndStream,CC,QQ,RR1,arows, acols, asortndx, brows, bcols, bsortndx);
                     dk       = @() abcDisturbanceSmoothingSamplerNaN1draw(acompanion1, bcompanion1, ccompanion1, Ydata, yNaNndx, x0companion1, cholsig00companion1, [], [], rndStream);
+                    dkmiss   = @() stateABnanDraw1(acompanion1(:,:,1), bcompanion1(:,:,1), 1+(1:Ny), Ydata, yNaNndx, x0companion1, ones(Ny,T), rndStream);
 
                     PS0times(iterP, iterNy, iterT) =  timeit(precsam0, 1);
                     PStimes(iterP, iterNy, iterT)  =  timeit(precsam, 1);
-                    DKtimes(iterP, iterNy, iterT)  =  timeit(dk, 1);
+                    DKtimes(iterP, iterNy, iterT)      =  timeit(dk, 1);
+                    DKMisstimes(iterP, iterNy, iterT)  =  timeit(dkmiss, 1);
 
                 end % p
 
@@ -242,5 +250,9 @@ for missValShare = [.01 .05 .1 .2]
         matname = sprintf('VARmissingvaluesPStimes%sThreads%dof%dmissValShare%02d', thisBrand, usedThreads, availableThreads, floor(missValShare * 100));
         save(matname, varlist{:});
 
-    end % doSingleThred
+        if quicky
+            return
+        end
+
+    end % doSingleThread
 end % missValShare
