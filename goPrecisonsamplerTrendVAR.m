@@ -202,7 +202,7 @@ for doSingleThread = [true false]
                 Ccompanion = repmat(Ccompanion, [1 1 T]);
 
                 Ydata      = reshape(Y, Ny, T);
-                dk         = @() abcDisturbanceSmoothingSampler1draw(Acompanion, Bcompanion, Ccompanion, Ydata, x0companion, cholsigx0companion, [], rndStream);
+                dk         = @() abcDisturbanceSmoothingSampler1drawSLIM(Acompanion, Bcompanion, Ccompanion, Ydata, x0companion, cholsigx0companion, [], rndStream);
 
                 DKtimes(iterP, iterNy, iterT) = timeit(dk, 1);
 
