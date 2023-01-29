@@ -65,7 +65,7 @@ for BRANDS = {'MacOSIntel', 'WindowsXeon'}
                 continue % skip other cases, since matfiles for IntelUbuntu are missing
             end
 
-            matfiledir = 'matfiles2';
+            matfiledir = 'matfiles2023';
             matname = sprintf('VARmissingvaluesPStimes%sThreads%dof%dmissValShare%02d', thisBrand, usedThreads, availableThreads, floor(missValShare * 100));
             mat     = matfile(fullfile(matfiledir, matname));
 

@@ -27,7 +27,7 @@ initwrap
 
 %% load results
 
-for BRANDS = {'WindowsXeon',  'MacOSIntel'} % 'AppleSilicon', , , 'IntelUbuntu'}
+for BRANDS = {'WindowsXeon', 'AppleSilicon', 'MacOSIntel'} 
 
     thisBrand = BRANDS{:};
     switch thisBrand
@@ -63,7 +63,7 @@ for BRANDS = {'WindowsXeon',  'MacOSIntel'} % 'AppleSilicon', , , 'IntelUbuntu'}
             continue % skip other cases, since matfiles for IntelUbuntu are missing
         end
 
-        matfiledir = 'matfiles2';
+        matfiledir = 'matfiles2023';
         matname = sprintf('TRENDVARgapPStimes%sThreads%dof%d', thisBrand, usedThreads, availableThreads);
         mat     = matfile(fullfile(matfiledir, matname));
 
@@ -94,7 +94,7 @@ for BRANDS = {'WindowsXeon',  'MacOSIntel'} % 'AppleSilicon', , , 'IntelUbuntu'}
         %% create latex table
 
         panellabel   = {'A', 'B', 'C', 'D'};
-        panelcaption = {'PS (excl. QR) relative to DK (in pp)', 'PS (incl. QR) relative to DK (in pp)', 'PS (vectorized inputs) relative to DK (in pp)',  'DK (in seconds)'};
+        panelcaption = {'PS (excl. QR) relative to DK (in pp)', 'PS (incl. QR) relative to DK (in pp)', 'PS w/vectorized inputs (excl. QR) relative to DK (in pp)',  'DK (in seconds)'};
         Npanel       = length(panellabel);
 
         tabname    = sprintf('TRENDVARgapPStimes%sThreads%dof%d.tex', thisBrand, usedThreads, availableThreads);
@@ -172,7 +172,7 @@ for BRANDS = {'WindowsXeon',  'MacOSIntel'} % 'AppleSilicon', , , 'IntelUbuntu'}
         fprintf(fid, 'Panels~A, B and~C report the execution time of a typical call to the precision-based sampler (PS) for different choices of lag length ($p$),  number of VAR variables ($N_y$) and observations ($T$) in percentage points of the execution time of the Durbin-Koopmann''s disturbance smoothing sampler (DK) whose execution time (in seconds) is reported in Panel~D.\n');
         fprintf(fid, 'Execution times for the  precision-based sampler reported in Panel A reflect the use of prepared one-off computations (incl. the QR decomposition of measurement loadings $\\boldsymbol{C}$) outside the measured times. These time are relevant for MCMC applications where $\\boldsymbol{C}$ does not change between sampling steps.\n');
         fprintf(fid, 'Panel~B considers calls to the precision-based sampler that encompass all computations.\n');
-        fprintf(fid, 'Panel~C reflects results for calls to the precision-based sampler that use vectorized inputs (instead of having to convert the state space into vectorized format).\n');
+        fprintf(fid, 'Panel~C reflects results for calls to the precision-based sampler that use vectorized inputs (instead of having to convert the state space into vectorized format) and are exclusive of the QR step.\n');
         fprintf(fid, 'All times were measured in %s with the \\texttt{timeit} function on an %s ', thisMatlab, thisComputer);
         if usedThreads == 1
             fprintf(fid, ' in single-threaded mode.\n');
