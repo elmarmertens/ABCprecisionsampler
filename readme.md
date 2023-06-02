@@ -2,7 +2,7 @@
 
 This readme file describes the set of replication files for “Precision-based sampling for state space models without measurement error.“[^draft]
 
-[^draft]: [latest draft](https://drive.google.com/file/d/1bzRInkpglMolYdZ2sZeJhs_gbJgPtBXU/view?usp=share_link), with [supplementary appendix](https://drive.google.com/file/d/1ISLJHl2r5Fm9-xG0-ncEVteZKk1DktPY/view?usp=share_link)
+[^draft]: [latest draft](https://drive.google.com/file/d/13Hef9bNI3N6PElvCkDbEeyc_E1XUX9Cf/view?usp=share_link), with [supplementary appendix](https://drive.google.com/file/d/1s4qXSRI96sAy36FEXvBavCugDXHxlTZB/view?usp=share_link)
 
 
 The project is work in progress, and all results are to be considered preliminary.  The materials provided do not necessarily reflect the views of the Deutsche Bundesbank, or the Eurosystem.
