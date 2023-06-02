@@ -12,4 +12,5 @@
 !.gitattributes
 !/matlabtoolbox/
 !/matlabtoolbox/*/
+!/INFTRMINT
 local*.m
