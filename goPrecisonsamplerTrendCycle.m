@@ -17,18 +17,16 @@ addpath matlabtoolbox/emstatespace/
 
 rng(061222); %  fix random seed
 
-quicky = false;
 
 %#ok<*UNRCH>
 %#ok<*NOPTS>
 
-rng(011222)
 
 for doSingleThread = [true false]
 
     maxNumCompThreads('automatic');
     if doSingleThread
-        % enforce single threaded compuations
+        % enforce single threaded computations
         usedThreads = 1;
         availableThreads = maxNumCompThreads(usedThreads);
         fprintf('Using 1 of %d available threads.\n', availableThreads)
@@ -45,7 +43,7 @@ for doSingleThread = [true false]
     gridT  = [200 800];
     gridP  = [4 8 12 24];
 
-    [PStimes, PS0times, PSyxtimes, PS0yxtimes, DKtimes]  = deal(NaN(length(gridP), length(gridNy), length(gridT)));
+    [PStimes, PS0times, PSnoisetimes, PSnoise0times, TCPStimes, TCPS0times, PSyxtimes, PS0yxtimes, DKtimes]  = deal(NaN(length(gridP), length(gridNy), length(gridT)));
 
     for iterT = 1 : length(gridT)
         T = gridT(iterT)
@@ -57,7 +55,7 @@ for doSingleThread = [true false]
                 p = gridP(iterP)
 
                 %% prepare vectorized system
-                Nx = Ny + 1;
+                Nx = Ny + Ny;
 
                 Nx0   = Nx * p;
                 NyT   = Ny * T;
@@ -80,19 +78,17 @@ for doSingleThread = [true false]
                 minnesotaPrior = minnesotaPrior ./ permute(1:p, [1 3 2]).^kappa3;
                 agap           = minnesotaPrior .* randn(Ny,Ny,p);
 
-                a                = zeros(Nx,Nx,p);
-                a(1,1,1)         = 1;
-                a(2:end,2:end,:) = agap;
+                a                      = zeros(Nx,Nx,p);
+                a(1:Ny,1:Ny,1)         = eye(Ny);
+                a(Ny+1:end,Ny+1:end,:) = agap;
 
-                b = randn(Nx);
-                b = chol(b * b')';
+                b = blkdiag(randn(Ny), randn(Ny)); % trend and cycle assumed orthogonal
 
-                c = [ones(Ny,1) eye(Ny, Ny)];
+                c = [eye(Ny) eye(Ny)];
 
                 % prior for x0; recall ordering is from x(-p+1) to x(0)
-                X0                     = (1:Nx0)' * 100; % zeros(Nx0,1);
+                X0                     = zeros(Nx0,1);
                 cholsigX0              = 1e2 * eye(Nx0);
-                cholsigX0(1:Nx:Nx0,1)  = 1e3;
                 invcholsigX0           = inv(cholsigX0);
 
                 % create 3D state space matrices
@@ -153,7 +149,8 @@ for doSingleThread = [true false]
                 xshocks    = randn(rndStream, NxTp, 1);
                 X          = AA \ (XX0 + BB * xshocks(:));
                 Y          = CC * X;
-                
+
+                %% measure Precision samplers
                 YXprecsam0 = @() abcYXprecisionsampler(Y,XX0,AA,invBB,CC,rndStream);
                 [~, QQ, RR1]  = YXprecsam0();
                 YXprecsam = @() abcYXprecisionsampler(Y,XX0,AA,invBB,CC,rndStream,QQ,RR1);
@@ -163,33 +160,50 @@ for doSingleThread = [true false]
 
 
                 y   = reshape(Y, Ny, T);
-                aaa = aaa(:,:,p:-1:1);
+                aaa = aaa(:,:,p:-1:1,:);
 
                 precsam0 = @() ALBCprecisionsampler(aaa,invbbb,ccc,y,X0,invcholsigX0,rndStream);
-                [~, CC, QQ, RR1, arows, acols, asortndx, brows, bcols, bsortndx]  = precsam0();
-                precsam = @() ALBCprecisionsampler(aaa,invbbb,ccc,y,X0,invcholsigX0,rndStream,CC,QQ,RR1,arows, acols, asortndx, brows, bcols, bsortndx); 
+                [~, CC, QQ, RR1, arows, acols, a0ndx, asortndx, brows, bcols, b0ndx, bsortndx]  = precsam0();
+                precsam = @() ALBCprecisionsampler(aaa,invbbb,ccc,y,X0,invcholsigX0,rndStream,CC,QQ,RR1,...
+                    arows, acols,a0ndx,asortndx,brows,bcols,b0ndx,bsortndx);
 
                 PS0times(iterP, iterNy, iterT) = timeit(precsam0, 1);
                 PStimes(iterP, iterNy, iterT)  = timeit(precsam, 1);
 
+                %% measure precision sampler with (minimal) noise
+
+                invnoisevol      = repmat(1e5, Ny, T);
+                precsamnoise0    = @() ALBCnoiseprecisionsampler(aaa,invbbb,ccc,invnoisevol,y,X0,invcholsigX0,rndStream);
+                [~, ~, CC, QQ, RR1, arows, acols, asortndx, brows, bcols, bsortndx]  = precsamnoise0();
+                precsamnoise = @() ALBCnoiseprecisionsampler(aaa,invbbb,ccc,invnoisevol,y,X0,invcholsigX0,rndStream,CC,QQ,RR1,arows, acols, asortndx, brows, bcols, bsortndx);
+
+                PSnoise0times(iterP, iterNy, iterT) = timeit(precsamnoise0, 1);
+                PSnoisetimes(iterP, iterNy, iterT)  = timeit(precsamnoise, 1);
+
+                %% trend-cycle sampler
+
+                invbbar  = eye(Ny) / b(1:Ny,1:Ny);
+                invbgap  = eye(Ny) / b(Ny+(1:Ny),Ny+(1:Ny));
+                ybar0    = sparse(Ny,1);
+                tcsam0   = @() trendcyclePrecisisionsampler(y, agap, invbgap, invbbar, ybar0, rndStream);
+                [~, ~, Abar, agaprows, agapcols, agapsortndx, brows, bcols] = tcsam0();
+                tcsam    = @() trendcyclePrecisisionsampler(y, agap, invbgap, invbbar, ybar0, rndStream, Abar, agaprows, agapcols, agapsortndx, brows, bcols);
+                TCPS0times(iterP, iterNy, iterT) = timeit(tcsam0, 2);
+                TCPStimes(iterP, iterNy, iterT)  = timeit(tcsam, 2);
 
                 %% DK application
-                Nw         = Nx;
-                Nstates    = Nx * p;
+                Nw         = Ny * 2;
+                Nstates    = Ny + Ny * p;
 
-                % construct index to remap prior
-                ndx0 = (1:Nx0)';
-                ndx0 = reshape(ndx0,Nx,p);
-                ndx0 = fliplr(ndx0);
-                ndx0 = ndx0(:);
-
-                x0companion        = X0(ndx0);
-                cholsigx0companion = cholsigX0(ndx0,ndx0);
+               
+                x0companion        = zeros(Nstates,1);
+                cholsigx0companion = 1e2 * eye(Nstates);
                 sigx0companion     = cholsigx0companion * cholsigx0companion';
 
-                Acompanion         = zeros(Nstates);
-                Acompanion(1:Nx,:) = reshape(a, Nx, Nstates);
-                Acompanion(Nx+1:Nstates,1:Nx*(p-1)) = eye(Nx*(p-1));
+                Acompanion                               = zeros(Nstates);
+                Acompanion(1:Ny,1:Ny)                    = eye(Ny);
+                Acompanion(Ny+(1:Ny),Ny+1:end)           = reshape(agap, Ny, Ny * p);
+                Acompanion(Nx+1:Nstates,Ny+(1:Ny*(p-1))) = eye(Ny*(p-1));
 
                 Bcompanion         = zeros(Nstates,Nw);
                 Bcompanion(1:Nx,:) = b;
@@ -197,12 +211,12 @@ for doSingleThread = [true false]
                 Ccompanion         = zeros(Ny, Nstates);
                 Ccompanion(:,1:Nx) = c;
 
+
                 Acompanion = repmat(Acompanion, [1 1 T]);
                 Bcompanion = repmat(Bcompanion, [1 1 T]);
                 Ccompanion = repmat(Ccompanion, [1 1 T]);
 
-                Ydata      = reshape(Y, Ny, T);
-                dk         = @() abcDisturbanceSmoothingSampler1drawSLIM(Acompanion, Bcompanion, Ccompanion, Ydata, x0companion, cholsigx0companion, [], rndStream);
+                dk         = @() abcDisturbanceSmoothingSampler1drawSLIM(Acompanion, Bcompanion, Ccompanion, y, x0companion, cholsigx0companion, [], rndStream);
 
                 DKtimes(iterP, iterNy, iterT) = timeit(dk, 1);
 
@@ -233,11 +247,9 @@ for doSingleThread = [true false]
     end
     varlist = {'grid*', '*times', 'thisArch', 'thisVer', 'thisSys', 'thisBrand', ...
         'doSingleThread', 'usedThreads', 'availableThreads'};
-    matname = sprintf('TRENDVARgapPStimes%sThreads%dof%d', thisBrand, usedThreads, availableThreads);
+    matname = sprintf('TRENDCYCLEPStimes%sThreads%dof%d', thisBrand, usedThreads, availableThreads);
     save(matname, varlist{:});
 
-    if quicky
-        return
-    end
 
 end % doSingleThread
+

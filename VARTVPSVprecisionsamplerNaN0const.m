@@ -1,22 +1,28 @@
 function [Xdraw, CC, QQ, RR1, arows, acols, asortndx, brows, bcols, bsortndx] = ...
-    VARTVPSVprecisionsamplerNaN0const(aaa,invbbb,ccc,y,yNaN,x0,xbar,rndStream,CC,QQ,RR1,arows, acols, asortndx, brows, bcols, bsortndx)
-% ABCPRECISIONSAMPLER for case of VAR(p) with missing values and fixed initial conditions
+    VARTVPSVprecisionsamplerNaN0const(aaa,invbbb,ccc,y,yNaN,x0,xbar,rndStream,CC,QQ,RR1,...
+    arows, acols, asortndx, brows, bcols, bsortndx)
+% VARTVPSVprecisionsamplerNaN0const for case of VAR(p) with missing values and fixed initial conditions
 %
 % aaa is Ny x Ny x p (x T) (T dimension is optional)
 % invbbb is Ny x Ny (x T) (T dimension is optional); invbbb * invbbb' is inverse of variance of VAR residuals
-% ccc is measurement vecotr (typically be identity matrix), in general Ny x Ny ( x T)
-% x0 is Ny * p vector of initial conditions (p lags of y)
+% ccc is measurement vector (typically be identity matrix), in general Ny x Ny ( x T)
+% x0 is Ny x p matrix of initial conditions (p lags of y)
 % arguments after rndStream can be empty and will be returned as outputs for use in future calls
 % Xdraws is Ny * T vector output (can be shaped to Ny x T)
 
 %% VERSION INFO
 % AUTHOR    : Elmar Mertens
 
+
 % get dimensions
 [Ny, T] = size(y);
 p       = size(aaa,3);
 Nx      = size(x0,1);
 Nw      = size(invbbb,2);
+
+if Nw ~= Nx
+    error('Expecting Nw identical to Nx')
+end
 
 if nargin < 9
     CC  = [];
@@ -25,7 +31,7 @@ if nargin < 9
     [arows, acols, asortndx, brows, bcols, bsortndx] = deal([]);
 end
 
-if ndims(aaa) == 3
+if ndims(aaa) <= 3
     aaa = repmat(aaa, [1 1 1 T]);
 end
 if ismatrix(invbbb)
@@ -38,6 +44,7 @@ end
 NyT   = Ny * T;
 NwT   = Nw * T;
 NxT   = Nx * T;
+
 
 %% construct vectorized state space
 Y     = reshape(y, NyT, 1);
@@ -81,8 +88,11 @@ if isempty(CC)
         acols       = [acols(:); thesecols(:)];
     end
 
-    [acols, asortndx] = sort(acols);
-    arows             = arows(asortndx);
+    % sort A indices
+    ndx = sub2ind([NxT, NxT], arows, acols);
+    [~, asortndx] = sort(ndx);
+    arows         = arows(asortndx);
+    acols         = acols(asortndx);
 
     % BB
     brows  = repmat((1 : Nx)', 1 , Nw, T);
@@ -92,8 +102,11 @@ if isempty(CC)
     bcols  = repmat(1 : NwT, Nx, 1);
     bcols  = reshape(bcols, NwT * Nx, 1);
 
-    [bcols, bsortndx] = sort(bcols);
-    brows             = brows(bsortndx);
+    % sort B indices
+    ndx = sub2ind([NxT, NwT], brows, bcols);
+    [~, bsortndx] = sort(ndx);
+    brows         = brows(bsortndx);
+    bcols         = bcols(bsortndx);
 
     % C
     crows     = repmat((1 : Ny)', 1 , Nx, T);
@@ -101,7 +114,16 @@ if isempty(CC)
     crows     = crows(:);
     ccols     = repmat(1 : NxT, Ny, 1);
     ccols     = ccols(:);
-    CC        = sparse(crows, ccols, ccc, NyT, NxT);
+
+
+    % sort C indices
+    ndx = sub2ind([NyT, NxT], crows, ccols);
+    [~, csortndx] = sort(ndx);
+    crows         = crows(csortndx);
+    ccols         = ccols(csortndx);
+    ccc           = ccc(csortndx);
+    CC            = sparse(crows, ccols, ccc, NyT, NxT);
+
     % drop rows associated with NaN
     CC        = CC(~yNaN,:);
     % perform QR
@@ -122,10 +144,9 @@ QQ2       = QQ(:,N1+1:end)';
 
 %% sparse builds for BB and AA
 % AA
-values           = NaN(NxT + NxNx * sum(T - 1 : p),1);
-% add unit diagonal element
-values(1 : NxT)  = 1;
-% add p lags (sequentially)
+Naa              = NxT + NxNx * p * (T - p) +sum(NxNx * (1 : p - 1));
+values           = ones(Naa,1);
+% fill p lags (sequentially)
 offset = NxT;
 for k = 1 : p
     values(offset + (1 : NxNx * (T-k))) = -reshape(aaa(:,:,k,1+k:T), Nx * Nx * (T - k), 1);
@@ -138,28 +159,24 @@ AA                  = sparse(arows, acols, values, NxT, NxT);
 invbbb  = invbbb(bsortndx);
 invBB   = sparse(brows, bcols, invbbb, NxT, NxT);
 
-
 %% means and innovations
 EX        = AA \ XX0;
 EY        = CC * EX;
 
 X1tilde   = RR1 \ (Y - EY);
 
+QQX1tilde = QQ1' * X1tilde;
+
 %% precision-based sampler
-AAtilde     = invBB * AA;
-AAtildeQQ   = AAtilde * QQ;
-AAtildeQQ2  = AAtildeQQ(:,N1+1:end);
-QQ2invSIG   = AAtildeQQ2' * AAtildeQQ;
-invQSIG21   = QQ2invSIG(:,1:N1);
-invQSIG22   = QQ2invSIG(:,1+N1:end);
-
-
+AAtilde       = invBB * AA;
+AAtildeQQX1   = AAtilde * QQX1tilde;
+AAtildeQQ2    = AAtilde * QQ2';
+invQSIG22     = transpose(AAtildeQQ2) * AAtildeQQ2;
 cholinvQSIG22 = chol(invQSIG22, 'lower');
 
-
-X2hat         = - cholinvQSIG22 \ (invQSIG21 * X1tilde);
+X2hat         = - cholinvQSIG22 \ (AAtildeQQ2' * AAtildeQQX1);
 
 Z2draw        = randn(rndStream, N2, 1) + X2hat;
 X2draw        = cholinvQSIG22' \ Z2draw;
-Xdraw         = EX + QQ1' * X1tilde + QQ2' * X2draw;
+Xdraw         = EX + QQX1tilde + QQ2' * X2draw;
 

@@ -17,18 +17,16 @@ addpath matlabtoolbox/emstatespace/
 
 rng(061222); %  fix random seed
 
-quicky = false;
-
 %#ok<*UNRCH>
 %#ok<*NOPTS>
 
-for missValShare = [.01 .05 .1 .2 .3 .5]
+for missValShare = [.01 .05 .1 .2 .3 .5 .7 .9]
     
     for doSingleThread = [true false]
 
         maxNumCompThreads('automatic');
         if doSingleThread
-            % enforce single threaded compuations
+            % enforce single threaded computations
             usedThreads = 1;
             availableThreads = maxNumCompThreads(usedThreads);
             fprintf('Using 1 of %d available threads.\n', availableThreads)
@@ -79,7 +77,7 @@ for missValShare = [.01 .05 .1 .2 .3 .5]
 
 
                     b = randn(Nx);
-                    b = chol(b* b')';
+                    % b = chol(b* b')';
 
                     c = eye(Ny, Nx);
 
@@ -249,10 +247,6 @@ for missValShare = [.01 .05 .1 .2 .3 .5]
             'doSingleThread', 'usedThreads', 'availableThreads', 'missValShare'};
         matname = sprintf('VARmissingvaluesPStimes%sThreads%dof%dmissValShare%02d', thisBrand, usedThreads, availableThreads, floor(missValShare * 100));
         save(matname, varlist{:});
-
-        if quicky
-            return
-        end
 
     end % doSingleThread
 end % missValShare

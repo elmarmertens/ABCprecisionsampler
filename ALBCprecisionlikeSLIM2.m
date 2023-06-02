@@ -14,7 +14,7 @@ p       = size(aaa,3);
 Nx      = size(aaa,1);
 Nw      = size(invbbb,2);
 if Nx ~= Nw
-    erorr('dimension mismatch: Nx not equal to Nw')
+    error('dimension mismatch: Nx not equal to Nw')
 end
 
 if nargin < 7
