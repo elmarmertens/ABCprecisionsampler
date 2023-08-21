@@ -1,11 +1,9 @@
 # ABCprecisionsampler: “Precision-based sampling for state space models without measurement error“
 
-This readme file describes the set of replication files for “Precision-based sampling for state space models without measurement error.“[^draft]
-
-[^draft]: [latest draft](https://drive.google.com/file/d/13Hef9bNI3N6PElvCkDbEeyc_E1XUX9Cf/view?usp=share_link), with [supplementary appendix](https://drive.google.com/file/d/1s4qXSRI96sAy36FEXvBavCugDXHxlTZB/view?usp=share_link)
+This readme file describes the set of replication files for “Precision-based sampling for state space models without measurement error.“ (2023) published in the Journal of Economic Dynamics and Control. [https://doi.org/10.1016/j.jedc.2023.104720](https://doi.org/10.1016/j.jedc.2023.104720)
 
 
-The project is work in progress, and all results are to be considered preliminary.  The materials provided do not necessarily reflect the views of the Deutsche Bundesbank, or the Eurosystem.
+The materials provided do not necessarily reflect the views of the Deutsche Bundesbank, or the Eurosystem. All codes are provided on an "as is" basis for research purposes and without warranty. Feel free to use and disseminate the codes as long as proper attribution is given to the original source.
 
 ## Author
 
