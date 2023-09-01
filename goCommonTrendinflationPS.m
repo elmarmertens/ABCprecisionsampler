@@ -167,8 +167,6 @@ invbbb               = zeros(Nbar + Ngap,Nbar + Ngap,T);
 ccc                  = [ones(N,1) eye(N)];
 
 X00                  = sparse((Nbar + Ngap) * p, 1);
-X00                  = zeros((Nbar + Ngap) * p, 1);
-X00                  = sparse(X00);
 invsqrtSigma00       = [1e-4 * ones(Nbar,1); 1e-1 * ones(Ngap,1)];
 invsqrtSigma00       = repmat(invsqrtSigma00, p, 1);
 invsqrtSigma00       = spdiags(invsqrtSigma00, 0, (Nbar + Ngap) * p, (Nbar + Ngap) * p);
